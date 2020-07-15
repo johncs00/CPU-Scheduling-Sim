@@ -3,18 +3,27 @@ import time
 import random as rand
 import math
 
+def burstnumber(input):
+    input = input * 100
+    input = math.trunc(input)
+    input += 1
+    return input
+
 print("Testing")
 r = rand.random()
 print(r)
 
 
+bursttest = 0.0856756876765
+bursttest = burstnumber(bursttest)
+print(bursttest, "This should be 9")
 min = 0
 max = 0
 sum = 0
 #replace l with argv[3]
 #replace upperbound with argv[4]
 iterations = 10000000
-l = 0.001;
+l = 0.001
 upperbound = 3000
 
 for i in range(iterations):
@@ -37,3 +46,4 @@ for i in range(iterations):
     print( "minimum value: ", min)
     print( "maximum value: ", max)
     print( "average value: ", avg)
+
