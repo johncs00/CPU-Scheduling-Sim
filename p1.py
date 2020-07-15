@@ -65,7 +65,8 @@ if __name__ == "__main__":
         print("bad args")
 
     numpros = int(sys.argv[1])
-    '''seed = sys.argv[2]
+    seed = int(sys.argv[2])
+    '''
     l = sys.argv[3]
     expceil = sys.argv[4]
     switchtime = sys.argv[5]
@@ -99,8 +100,8 @@ if __name__ == "__main__":
     l = 0.001
     upperbound = 3000   
     interarrival = []
-    randy = rand(1001)
-    randy.srand48(1001)
+    randy = rand(seed)
+    randy.srand48(seed)
     for i in range(iterations):
         #replace random() with drand48
         r = randy.drand48()   #/ * uniform # dist[0.00, 1.00) -- also check out random() * /
@@ -197,7 +198,8 @@ if __name__ == "__main__":
             rand_index +=1
 
     
-
+    for p in plist_RR:
+        print(p.getCpu())
         
 
     
