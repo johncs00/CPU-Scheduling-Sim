@@ -18,10 +18,10 @@ class rand:
 
 
 class Process:
-    def __init__(self, name, cpu_time, io_time, state, num_burst, arrival_time, turn_time, wait_time):
+    def __init__(self, name, cpu_times, io_times, state, num_burst, arrival_time, turn_time, wait_time):
         self.n = name
-        self.cpu = cpu_time
-        self.io = io_time
+        self.cpu = cpu_times
+        self.io = io_times
         self.s = state
         self.b = num_burst
         self.a = arrival_time
@@ -33,12 +33,12 @@ class Process:
         self.n = name
     def getCpu(self):
         return self.cpu
-    def setCpu(self, cpu_time):
-        self.cpu = cpu_time
+    def setCpu(self, cpu_times):
+        self.cpu = cpu_times
     def getIo(self):
         return self.io
-    def setIo(self, io_time):
-        self.io = io_time
+    def setIo(self, io_times):
+        self.io = io_times
     def getState(self):
         return self.s
     def setState(self, state):
@@ -57,49 +57,14 @@ def burstnumber(input):
     input = math.trunc(input)
     input += 1
     return input
-    
-if __name__ == "__main__":
-    inputlen = len(sys.argv)
-    if (not(inputlen == 9 or inputlen == 8)):
-        #make the code fucking stop here
-        print("bad args")
 
-    numpros = int(sys.argv[1])
-    seed = int(sys.argv[2])
-    '''
-    l = sys.argv[3]
-    expceil = sys.argv[4]
-    switchtime = sys.argv[5]
-    alpha = sys.argv[6]
-    tslice = sys.argv[7]
-    rradd = "END"  # end
-    #check if the optional one is added
-    if (inputlen == 9):
-        print(sys.argv[8])
-        if (sys.argv[8] == "END"):
-            rradd = "END"
-        elif (sys.argv[8] == "BEGINNING"):
-            rradd = "Beginning"
-        else:
-            print("invalid arg 8")
-            print("Testing")
-            r = rand.random()
-            print(r)
-    '''        
-            
-    #bursttest = 0.0856756876765
-    #bursttest = burstnumber(bursttest)
-    #print(bursttest, "This should be 9")
-    
-    #replace l with argv[3]
-    #replace upperbound with argv[4]
+def randList(l, upperbound, seed):
     min = 0
     max = 0
     sum = 0
-    iterations = 10000000
-    l = 0.001
-    upperbound = 3000   
-    interarrival = []
+    iterations = 100000
+    #l = 0.001  
+    r_list = []
     randy = rand(seed)
     randy.srand48(seed)
     for i in range(iterations):
@@ -111,7 +76,8 @@ if __name__ == "__main__":
             i -= 1
             continue
             #print("x is ", x)
-        interarrival.append(x)
+        pair = (x,r)
+        r_list.append(pair)
         sum += x
         if (i == 0 or x < min):
             min = x
@@ -119,11 +85,46 @@ if __name__ == "__main__":
             max = x
         
         avg = sum / iterations
-        #print( "minimum value: ", min)
-        #print( "maximum value: ", max)
-        #print( "average value: ", avg)
 
+    return r_list
+    #print( "minimum value: ", min)
+    #print( "maximum value: ", max)
+    #print( "average value: ", avg)
+    
+if __name__ == "__main__":
+    inputlen = len(sys.argv)
+    if (not(inputlen == 9 or inputlen == 8)):
+        #make the code fucking stop here
+        print("bad args")
 
+    numpros = int(sys.argv[1])
+    seed = int(sys.argv[2])
+    l = float(sys.argv[3])
+    expceil = int(sys.argv[4])
+    switchtime = float(sys.argv[5])
+    alpha = float(sys.argv[6])
+    tslice = float(sys.argv[7])
+    rradd = "END"  # end
+    #check if the optional one is added
+    if (inputlen == 9):
+        print(sys.argv[8])
+        if (sys.argv[8] == "END"):
+            rradd = "END"
+        elif (sys.argv[8] == "BEGINNING"):
+            rradd = "Beginning"
+        else:
+            print("invalid arg 8")
+            print("Testing")
+            #r = rand.random()
+            print(r)        
+            
+    #bursttest = 0.0856756876765
+    #bursttest = burstnumber(bursttest)
+    #print(bursttest, "This should be 9")
+    
+    #replace l with argv[3]
+    #replace upperbound with argv[4]
+    
     process_names = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']
     plist_RR = []
     plist_SRT = []
@@ -132,74 +133,76 @@ if __name__ == "__main__":
     
     #fill each list with default processes
     for i in range(numpros):
-        plist_RR.append(Process(process_names[i], 0, 0, 1, 0, 0, 0, 0))   #Adds process into the list, all times set to 0 and default state of 1
-        plist_SJF.append(Process(process_names[i], 0, 0, 1, 0, 0, 0, 0))
-        plist_SRT.append(Process(process_names[i], 0, 0, 1, 0, 0, 0, 0))
-        plist_FCFS.append(Process(process_names[i], 0, 0, 1, 0, 0, 0, 0))
+        plist_RR.append(Process(process_names[i], [], [], 1, 0, 0, 0, 0))   #Adds process into the list, all times set to 0 and default state of 1
+        plist_SJF.append(Process(process_names[i], [], [], 1, 0, 0, 0, 0))
+        plist_SRT.append(Process(process_names[i], [], [], 1, 0, 0, 0, 0))
+        plist_FCFS.append(Process(process_names[i], [], [], 1, 0, 0, 0, 0))
     #DO calculations to give proceses their rime values.
+
+    interarrival = randList(l, expceil, seed)
+
     rand_index = 0;
     for p in plist_RR:
-        p.setArrival((math.floor(10.64899)))
+        p.setArrival(math.floor(interarrival[rand_index][0]))
         rand_index +=1
-        temp_num_burst = burstnumber(interarrival[rand_index])
+        temp_num_burst = burstnumber(interarrival[rand_index][1])
         p.setBurst(temp_num_burst)
+        print(temp_num_burst)
         rand_index +=1
         for r in range(temp_num_burst):
-            p.setCpu(math.ceil(interarrival[rand_index]))
+            p.cpu.append(math.ceil(interarrival[rand_index][0]))
             rand_index +=1
             if(r == temp_num_burst - 1):
                 break
-            p.setIo(math.ceil(interarrival[rand_index]))
+            p.io.append(math.ceil(interarrival[rand_index][0]))
             rand_index +=1
 
     rand_index = 0
     for p in plist_SRT:
-        p.setArrival(math.floor(interarrival[rand_index]))
+        p.setArrival(math.floor(interarrival[rand_index][0]))
         rand_index +=1
-        temp_num_burst = burstnumber(interarrival[rand_index])
+        temp_num_burst = burstnumber(interarrival[rand_index][1])
         p.setBurst(temp_num_burst)
         rand_index +=1
         for r in range(temp_num_burst):
-            p.setCpu(math.ceil(interarrival[rand_index]))
+            p.cpu.append(math.ceil(interarrival[rand_index][0]))
             rand_index +=1
             if(r == temp_num_burst - 1):
                 break
-            p.setIo(math.ceil(interarrival[rand_index]))
+            p.io.append(math.ceil(interarrival[rand_index][0]))
             rand_index +=1
 
     rand_index = 0
     for p in plist_SJF:
-        p.setArrival(math.floor(interarrival[rand_index]))
+        p.setArrival(math.floor(interarrival[rand_index][0]))
         rand_index +=1
-        temp_num_burst = burstnumber(interarrival[rand_index])
+        temp_num_burst = burstnumber(interarrival[rand_index][1])
         p.setBurst(temp_num_burst)
         rand_index +=1
         for r in range(temp_num_burst):
-            p.setCpu(math.ceil(interarrival[rand_index]))
+            p.cpu.append(math.ceil(interarrival[rand_index][0]))
             rand_index +=1
             if(r == temp_num_burst - 1):
                 break
-            p.setIo(math.ceil(interarrival[rand_index]))
+            p.io.append(math.ceil(interarrival[rand_index][0]))
             rand_index +=1
 
     rand_index = 0
     for p in plist_FCFS:
-        p.setArrival(math.floor(interarrival[rand_index]))
+        p.setArrival(math.floor(interarrival[rand_index][0]))
         rand_index +=1
-        temp_num_burst = burstnumber(interarrival[rand_index])
+        temp_num_burst = burstnumber(interarrival[rand_index][1])
         p.setBurst(temp_num_burst)
         rand_index +=1
         for r in range(temp_num_burst):
-            p.setCpu(math.ceil(interarrival[rand_index]))
+            p.cpu.append(math.ceil(interarrival[rand_index][0]))
             rand_index +=1
             if(r == temp_num_burst - 1):
                 break
-            p.setIo(math.ceil(interarrival[rand_index]))
+            p.io.append(math.ceil(interarrival[rand_index][0]))
             rand_index +=1
 
-    
-    for p in plist_RR:
-        print(p.getCpu())
+
         
 
     
