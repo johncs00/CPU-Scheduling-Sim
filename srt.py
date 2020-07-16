@@ -87,25 +87,33 @@ def SRT(listp, tcs, alpha, lambdainput):
         print("process", (listp[pid].a))
     newlist = []
     newlist = sorted(listp, key=lambda x: x.getArrival())
-    time += (tcs/2)
     tau = 1/lambdainput
     ready_queue = []
     for pid in range(len(newlist)):
-        tau = math.ceil(alpha * burst_io_time[processName][0] + (1 - alpha)) * tau
+        tau = math.ceil(alpha * newlist[pid].getIo() + (1 - alpha) * tau)
         print("process2",(newlist[pid].a))
     count = 0
-    running = newlist[0]
+    running = None
     while True:
         for pid in range(len(newlist)):
-            if (count == pid.getArrival()):
-                ready_queue.append(pid)
+            if (count == 1):
+                '''newlist[pid].getArrival()'''
+                ready_queue.append(newlist[pid])
                 break
-        ready_queue.sort(key=lambda x: x.getCPU())
         if (len(ready_queue) > 0):
-            if (ready_queue[0].getCPU() < (running.getCPU())):
+            ready_queue.sort(key=lambda x: x.getCpu())
+            if (running == None):
+                running = ready_queue.pop(0)
+            elif (ready_queue[0].getCpu() < (running.getCpu())):
+                time += (tcs/2)
                 ready_queue.append(running)
                 running = ready_queue.pop(0)
-        running.setCPU(running.getCPU() - 1)
+                time += (tcs/2)
+        if (running != None):
+            running.setCpu(running.getCpu() - 1)
+            if (running.getCpu() <= 0 and len(ready_queue) == 0):
+                break
+        print(count)
         count += 1   
             
         
