@@ -141,11 +141,11 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
                     p.cpu_i += 1
                            #c_counter[plist_RR.index(p)] += 1
                     if(time < 2000):
-                        
-                        print(s, " Process ", p.n, " has finished using the CPU [Q",printNames(readyQ))
+                        print(s, "Process", p.n, "completed a CPU burst;", (p.b - p.cpu_i),"bursts to go [Q",printNames(readyQ))
+                        print(s, "Process", p.n, "switching out of CPU; will block on I/O until time " +str(time + p.io[p.io_i])+ "ms [Q", printNames(readyQ))
                     if(p.cpu_i == (p.b - 1)):   #if(c_counter[plist_RR.index(p)] == p.b):
                         if(time < 1000):
-                            print("Process ", p.n, "has finished in its entirety")
+                            print("Process", p.n, "terminated [Q", printNames(readyQ))
                         run_counter = 0
                         plist_RR.remove(p)
                         running.remove(p)
@@ -156,7 +156,7 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
             #check if the running process ran out of time
             if(run_counter == t_slice):
                 if(time < 1000):
-                    print(s, " Process ", p.n, " has been preempted [Q",printNames(readyQ))
+                    print(s, "Time slice expired; process", running[0].n, "preempted with " + str(running[0].cpu[running[0].cpu_i]) + "ms to go [Q",printNames(readyQ))
                 #if there are items in the readyQ
                 if(len(readyQ) > 0):
                     swithcing = True
@@ -177,7 +177,7 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
                     readyQ.remove(p)
                     run_counter = 0
                     if(time < 2000):
-                        print(s, " Process ", p.n, " has started using the CPU [Q",printNames(readyQ))
+                        print(s, "Process", p.n, "started using the CPU for " + str(p.cpu[p.cpu_i]) +  "ms burst [Q",printNames(readyQ))
             #end of if !switching statement
 
         #check if any I/O has finished, and if so add to the readyQ. If not, decrement all
@@ -189,6 +189,8 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
                     readyQ.append(p)
                 else:
                     readyQ.insert(0, p)
+                if(time < 1000):
+                    print(s, "Process", p.n, "completed I/O; added to the ready queue [Q", printNames(readyQ))
             else:
                 p.io[p.io_i] -= 1             #p.io[0 + i_counter[plist_RR.index(p)]] -= 1
 
@@ -197,12 +199,12 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
             if(p.a == time):
                 #print("CPU times", p.cpu)
                 #print("I/O times", p.io)
-                if(time < 1000):
-                    print(s, " Process", p.n, "arrive; added to the ready queue [Q",printNames(readyQ))
                 if(default):
                     readyQ.append(p)
                 else:
                     readyQ.insert(0, p)
+                if(time < 1000):
+                    print(s, "Process", p.n, "arrived; added to the ready queue [Q",printNames(readyQ))
 
         if(switching):
             if(halfswtich):
