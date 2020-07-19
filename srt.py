@@ -20,14 +20,16 @@ def SRT(plist_SRT, switchtime):
         # decrement current running process
         if (context_time > 0):
             if (context_time > 0):
+                #print(context_time, time, switch_p)   
                 for p in waitingQ:
                     #print(switch_p)
+                    #switch_p = ""
                     if (p.n != switch_p or context_time > switchtime / 2):
                         # print(p.n, context_time, switch_p)
                         if (p.io[p.io_i] == 0):
                             io_corner = True
                             continue
-                        p.io[p.io_i] -= 1
+                        p.io[p.io_i] -= 1       
             context_time -= 1
             if (context_time == 0):
                 switch_p = ""
