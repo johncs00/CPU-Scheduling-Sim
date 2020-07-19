@@ -8,7 +8,7 @@ import heapq
 process_names = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
                  'U', 'V', 'W', 'X', 'Y', 'Z']
 
-f = open('testout.txt', 'w')
+f = open('simout.txt', 'w')
 
 
 class rand:
@@ -188,16 +188,40 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
     #If most of the above stuff is done, we're near 50/100 and have the ability to get alot done on SJF.
     #Somehow the program worked without continue
     #no clue how.
+    c_time = 0
+    total_bursts = 0
+    context_total = 0
+    preemptions = 0
+    avg_cpuburst = 0
+    total = 0
+    sums = 0
+    num_process = len(plist_RR)
+    if(t_slice > 1000):
+        for p in plist_RR:
+            for x in p.cpu:
+                sums += x
+                total += 1
+                
+        avg_cpuburst = (sums/total)
+        print("Algortithm FCFS", file = f)
+        print("-- average CPU burst time: %.3f" % avg_cpuburst, "ms", file = f)
+    else:
+        for p in plist_RR:
+            for x in p.cpu:
+                sums += x
+                total += 1
+                
+        avg_cpuburst = (sums/total)
+        print("Algortithm RR", file = f)
+        print("-- average CPU burst time: %.3f" % avg_cpuburst, "ms", file = f)
+    total_bursts = total
+    to_remove = 0
     io_corner = False
     context_time = 0
     default = True
     if (location == "BEGINNING"):
         default = False
     time = 0
-    if (t_slice < 1000000):
-        print("Round Robin Algorithm Start")
-    else:
-        print("FCFS Algorithm Start")
 
     switch_p = ""
     readyQ = []
@@ -209,20 +233,22 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
 
     while (True):
         s_r = 'time ' + repr(time) + 'ms:'
-        if (time == 0 and t_slice > 100000):
+        if (time == 0 and t_slice > 1000):
             print(s_r, "Simulator started for FCFS [Q", printNames(readyQ))
-        elif (time == 0 and t_slice < 100000):
+        elif (time == 0 and t_slice < 1000):
             print(s_r, "Simulator started for RR [Q", printNames(readyQ))
         # decrement current running process
         if(context_time > 0):
             if(context_time > 0):
+                if(context_time == switchtime):
+                    c_time += 1
                 for p in waitingQ:
-                    if(p.n != switch_p or context_time > switchtime/2):
-                        #print(p.n, context_time, switch_p)
-                        if(p.io[p.io_i] == 0):
+                    if(p.n != switch_p):
+                        if(p.io[p.io_i] == 0 or context_time > switchtime/2):
                             io_corner = True
                             continue
                         p.io[p.io_i] -= 1
+                        
                         
             if(context_time == 0):
                 switch_p = ""
@@ -231,15 +257,17 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
             time += 1
 
             if (len(running) == 0 and len(readyQ) == 0 and len(waitingQ) == 0 and time > 103 and context_time == 0):
-                if (t_slice > 100000):
+                if (t_slice > 1000):
                     print(s_r, "Simulator ended for FCFS [Q", printNames(readyQ))
                     print()
                 else:
                     print(s_r, "Simulator ended for RR [Q", printNames(readyQ))
                     print()
                 break
-
+            context_total += 1
             continue
+
+        
 
         for p in running:
             
@@ -249,62 +277,74 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
         for p in running:
             if (p.cpu[p.cpu_i] == 0):
                 p.cpu_i += 1
-                context = True
-                context_time += 2
-                if (time < 5000 and (p.b - p.cpu_i) != 0):
+                context_time += (switchtime/2)
+                if (time < 1000 and (p.b - p.cpu_i) != 0):
                     print(s_r, "Process", p.n, "completed a CPU burst;", (p.b - p.cpu_i), "bursts to go [Q",
                           printNames(readyQ))
                     if(p.io_i != p.b -1):
                         print(s_r, "Process", p.n,
                             "switching out of CPU; will block on I/O until time " + str(
-                                int(time + p.io[p.io_i] + switchtime / 2)) + "ms [Q",
+                                int(time + p.io[p.io_i] + switchtime/2)) + "ms [Q",
                             printNames(readyQ))
                         switch_p = p.n
                         
                 if (p.cpu_i == (p.b)):
                     print(s_r, "Process", p.n, "terminated [Q", printNames(readyQ))
                     run_counter = 0
-                    plist_RR.remove(p)
+                    #plist_RR.remove(p)
                     running.remove(p)
                 else:
+                    run_counter = 0
                     running.remove(p)
                     waitingQ.append(p)
-                    #print(waitingQ[0].n, context_time)
+
         # check if the running process ran out of time
+        
         if (run_counter == t_slice):
+            
             # context = True
-            if (time < 5000):
+            if (time < 1000 and len(readyQ) > 0):
+                preemptions += 1
                 print(s_r, "Time slice expired; process", running[0].n,
                       "preempted with " + str(running[0].cpu[running[0].cpu_i]) + "ms to go [Q", printNames(readyQ))
+            else:
+                if(time < 1000):
+                    print(s_r, "Time slice expired; no preemption because ready queue is empty [Q", printNames(readyQ))
             # if there are items in the readyQ
             if (len(readyQ) > 0):
                 # switching = True
                 temp_holder = running.pop(0)
+                context_time += int(switchtime/2)
                 if (default):
                     readyQ.append(temp_holder)
                 else:
-                    readyQ.insert(0, temp_holder)
-                context_time += switchtime
+                    readyQ.insert(0, temp_holder)  
             else:
                 run_counter = 0
+
         # check if any I/O has finished, and if so add to the readyQ. If not, decrement the io if not completed.
         for p in waitingQ:
-            if (p.io[p.io_i] == 0): 
+            #print(p.n, time, p.io[p.io_i], len(waitingQ))
+            if (p.io[p.io_i] == 0):
+                #if(waitingQ.index(p) == len(waitingQ) - 2):
+                    #waitingQ[waitingQ.index(p) + 1].io[p.io_i] -= 1
                 waitingQ.remove(p)
                 p.io_i += 1  
                 if (default):
                     readyQ.append(p)
                 else:
                     readyQ.insert(0, p)
-                if (time < 5000):
+                if (time < 1000):
                     if(io_corner):
                         s_r = 'time ' + repr(time - 1) + 'ms:'
-                        print(s_r, "Process", p.n, "completed I/O; added to the ready queue [Q", printNames(readyQ))
+                        print(s_r, "Process", p.n, "completed I/O; added to ready queue [Q", printNames(readyQ))
                         s_r = 'time ' + repr(time) + 'ms:'
                     else:
-                        print(s_r, "Process", p.n, "completed I/O; added to the ready queue [Q", printNames(readyQ))
+                        print(s_r, "Process", p.n, "completed I/O; added to ready queue [Q", printNames(readyQ))
             else:
-                p.io[p.io_i] -= 1  
+                p.io[p.io_i] -= 1
+
+        io_corner = False
         # check if any processes arrive
         for p in plist_RR:
             if (p.a == time):
@@ -312,24 +352,376 @@ def roundRobin(plist_RR, t_slice, location, switchtime):
                     readyQ.append(p)
                 else:
                     readyQ.insert(0, p)
-                if (time < 5000):
-                    print(s_r, "Process", p.n, "arrived; added to the ready queue [Q", printNames(readyQ))
+                if (time < 1000):
+                    print(s_r, "Process", p.n, "arrived; added to ready queue [Q", printNames(readyQ))
         # check if nothing is running
         for p in readyQ:
+            
             if (len(running) == 0):
                 running.append(p)
                 context_time += int(switchtime / 2)
-                s_r = 'time ' + repr(time + context_time) + 'ms:'
+                s_r = 'time ' + repr(time + int(context_time)) + 'ms:'
                 readyQ.remove(p)
                 run_counter = 0
-                if (time < 5000):
+                if (time < 1000):
                     print(s_r, "Process", p.n, "started using the CPU for " + str(p.cpu[p.cpu_i]) + "ms burst [Q",
                           printNames(readyQ))
         #Time increment and ender.
 
+        for p in readyQ:
+            p.wait += 1
+
         time += 1
+
+    
+    cpuburst_total = sums
+    sums = 0
+    for p in plist_RR:
+        sums += p.wait
+    print("-- average wait time: %.3f" % ((sums)/total_bursts), "ms", file = f)
+    print("-- average turnaround time: %.3f" % ((sums + cpuburst_total + (switchtime* total_bursts))/total), "ms", file = f)
+    print("-- total number of context switches:", int(context_total/switchtime) + 1, file = f)
+    print("-- total number of preemptions:", preemptions, file = f)
+
+
     # end of RoundRobin
 
+
+def SJF(plist_SJF, switchtime):
+    # TODO
+    # Implement a way to only lower numbers in io if not currently context switching
+    # maybe each process should have a state variable attached to it?
+    # Nah we fuckin deleted it earlier.
+    # For test case 3 we are missing a few context switches. See if you can find them! Full test cases below
+    # https://submitty.cs.rpi.edu/courses/u20/csci4210/display_file?dir=course_materials&path=%2Fvar%2Flocal%2Fsubmitty%2Fcourses%2Fu20%2Fcsci4210%2Fuploads%2Fcourse_materials%2Fproject%2Foutput03-full.txt
+    # Round Robin doesn't actually append anything and thus doesn't work. Most of the infrastructure is there so it can't be that hard.
+    # Don't know why Round Robin does that
+    # Shame.
+    # Numbers are wayy to low with multiple processes
+    # maybe a +4ms context switch is missing?
+    # Remember that continuing prevents the time+1 from happening.
+    # If most of the above stuff is done, we're near 50/100 and have the ability to get alot done on SJF.
+    # Somehow the program worked without continue
+    # no clue how.
+    total_bursts = 0
+    io_corner = False
+    context_time = 0
+    time = 0
+    context_total = 0
+    preemptions = 0
+    avg_cpuburst = 0
+    total = 0
+    sums = 0
+    num_process = len(plist_SJF)
+    
+    for p in plist_SJF:
+        for x in p.cpu:
+            sums += x
+            total += 1
+    total_bursts = total    
+    avg_cpuburst = (sums/total)
+    print("Algortithm SJF", file = f)
+    print("-- average CPU burst time: %.3f" % avg_cpuburst, "ms", file = f)
+
+
+    switch_p = ""
+    readyQ = []
+    waitingQ = []
+    running = []
+    run_counter = 0
+    for p in plist_SJF:
+        print("Process", p.n, "[NEW] (arrival time", p.a, "ms)", p.b, "CPU bursts")
+    heapq.heapify(readyQ)
+    while (True):
+        s_r = 'time ' + repr(time) + 'ms:'
+        if (time == 0):
+            print(s_r, "Simulator started for SJF [Q", printNames(readyQ))
+        # decrement current running process
+        if (context_time > 0):
+            if (context_time > 0):
+                for p in waitingQ:
+                    if (p.n != switch_p or context_time > switchtime / 2):
+                        # print(p.n, context_time, switch_p)
+                        if (p.io[p.io_i] == 0):
+                            io_corner = True
+                            continue
+                        p.io[p.io_i] -= 1
+            
+            context_time -= 1
+            time += 1
+            if (context_time == 0):
+                switch_p = ""
+
+            if (len(running) == 0 and len(list(readyQ)) == 0 and len(waitingQ) == 0 and time > 103 and context_time == 0):
+                print(s_r, "Simulator ended for SJF [Q", printNames(readyQ))
+                print()
+                break
+            context_total += 1
+            continue
+
+        for p in readyQ:
+            p.wait += 1
+
+        for p in running:
+            p.cpu[p.cpu_i] -= 1
+            run_counter += 1
+        # if running rpocess has finished
+        for p in running:
+            if (p.cpu[p.cpu_i] == 0):
+                p.cpu_i += 1
+                context = True
+                context_time += 2
+                if (time < 1000 and (p.b - p.cpu_i) != 0):
+                    print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i - 1],"ms)" , "completed a CPU burst;", (p.b - p.cpu_i), "bursts to go [Q",
+                          printNames(readyQ))
+                    print(s_r, "Recalculated tau =", p.tauarray[p.cpu_i], "for process", p.n, "[Q", printNames(readyQ))
+                    if (p.io_i != p.b - 1):
+                        print(s_r, "Process", p.n,
+                              "switching out of CPU; will block on I/O until time " + str(
+                                  int(time + p.io[p.io_i] + switchtime / 2)) + "ms [Q",
+                              printNames(readyQ))
+                        switch_p = p.n
+                if (p.cpu_i == (p.b)):
+                    print(s_r, "Process", p.n, "terminated [Q", printNames(readyQ))
+                    run_counter = 0
+                    #plist_SJF.remove(p)
+                    running.remove(p)
+                else:
+                    running.remove(p)
+                    waitingQ.append(p)
+                    # print(waitingQ[0].n, context_time)
+        # check if the running process ran out of time
+        for p in waitingQ:
+            if (p.io[p.io_i] == 0):
+                waitingQ.remove(p)
+                p.io_i += 1
+                heapq.heappush(readyQ, p)
+                if (time < 1000):
+                    if (io_corner):
+                        #s_r = 'time ' + repr(time - 1) + 'ms:'
+                        print(s_r, "Process", p.n,"(tau", p.tauarray[p.cpu_i],"ms)" , "completed I/O; added to ready queue [Q", printNames(readyQ))
+                        s_r = 'time ' + repr(time) + 'ms:'
+                    else:
+                        print(s_r, "Process", p.n,"(tau", p.tauarray[p.cpu_i],"ms)" , "completed I/O; added to ready queue [Q", printNames(readyQ))
+            else:
+                p.io[p.io_i] -= 1
+                # check if any processes arrive
+        for p in plist_SJF:
+            if (p.a == time):
+                heapq.heappush(readyQ, p)
+                if (time < 1000):
+                    print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i], "ms)"   , "arrived; added to ready queue [Q", printNames(readyQ))
+        # check if nothing is running
+        if (len(running) == 0 and len(readyQ) != 0):
+            input = heapq.heappop(readyQ)
+            running.append(input)
+            context_time += int(switchtime / 2)
+            s_r = 'time ' + repr(time + context_time) + 'ms:'
+            run_counter = 0
+            if (time < 1000):
+                print(s_r, "Process", input.n, "(tau", input.tauarray[input.cpu_i],"ms)" ,"started using the CPU for " + str(input.cpu[input.cpu_i]) + "ms burst [Q",
+                          printNames(readyQ))
+        # Time increment and ender.
+
+        time += 1
+
+    cpuburst_total = sums
+    sums = 0
+    for p in plist_SJF:
+        sums += p.wait
+    print("-- average wait time: %.3f" % (sums/total_bursts), "ms", file = f)
+    print("-- average turnaround time: %.3f" % ((sums + cpuburst_total + (switchtime* total_bursts))/total), "ms", file = f)
+    print("-- total number of context switches:", int(context_total/switchtime) + 1, file = f)
+    print("-- total number of preemptions:", preemptions, file = f)
+
+
+
+def SRT(plist_SRT, switchtime):
+
+    total_bursts = 0
+    context_total = 0
+    preemptions = 0
+    avg_cpuburst = 0
+    total = 0
+    sums = 0
+    num_process = len(plist_SJF)
+
+    for p in plist_SRT:
+        for x in p.cpu:
+            sums += x
+            total += 1
+    total_bursts = total    
+    avg_cpuburst = (sums/total)
+    print("Algortithm SRT", file = f)
+    print("-- average CPU burst time: %.3f" % avg_cpuburst, "ms", file = f)
+
+
+    io_corner = False
+    context_time = 0
+    time = 0
+    print("SRT Algorithm Start")
+    switch_p = ""
+    readyQ = []
+    waitingQ = []
+    running = []
+    run_counter = 0
+    for p in plist_SRT:
+        print("Process", p.n, "[NEW] (arrival time", p.a, "ms)", p.b, "CPU bursts")
+    heapq.heapify(readyQ)
+    while (True):
+        #print(time)
+        preempted = False
+        s_r = 'time ' + repr(time) + 'ms:'
+        if (time == 0):
+            print(s_r, "Simulator started for SRT [Q", printNames(readyQ))
+        # decrement current running process
+        if (context_time > 0):
+            if (context_time > 0):
+                #print(context_time, time, switch_p)   
+                for p in waitingQ:
+                    #print(switch_p)
+                    #switch_p = ""
+                    if (p.n != switch_p or context_time > switchtime / 2):
+                        # print(p.n, context_time, switch_p)
+                        if (p.io[p.io_i] == 0):
+                            io_corner = True
+                            continue
+                        p.io[p.io_i] -= 1       
+            context_time -= 1
+            if (context_time == 0):
+                switch_p = ""
+            time += 1
+            #print(time)
+            if (len(running) == 0 and len(list(readyQ)) == 0 and len(
+                    waitingQ) == 0 and time > 103 and context_time == 0):
+                print(s_r, "Simulator ended for SRT [Q", printNames(readyQ))
+                print()
+                break
+
+            context_total += 1
+            continue
+
+        for p in readyQ:
+            p.wait += 1
+
+        for p in running:
+            p.cpu[p.cpu_i] -= 1
+            run_counter += 1
+        # if running rpocess has finished
+        for p in running:
+            if (p.cpu[p.cpu_i] == 0):
+                p.cpu_i += 1
+                context = True
+                context_time += 2
+                if (time < 1000 and (p.b - p.cpu_i) != 0):
+                    print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i - 1], "ms)", "completed a CPU burst;",
+                          (p.b - p.cpu_i), "bursts to go [Q",
+                          printNames(readyQ))
+                    print(s_r, "Recalculated tau =", p.tauarray[p.cpu_i], "for process", p.n, "[Q", printNames(readyQ))
+                    if (p.io_i != p.b - 1):
+                        print(s_r, "Process", p.n,
+                              "switching out of CPU; will block on I/O until time " + str(
+                                  int(time + p.io[p.io_i] + switchtime / 2)) + "ms [Q",
+                              printNames(readyQ))
+                        switch_p = p.n
+                if (p.cpu_i == (p.b)):
+                    print(s_r, "Process", p.n, "terminated [Q", printNames(readyQ))
+                    run_counter = 0
+                    #plist_SJF.remove(p)
+                    running.remove(p)
+                else:
+                    run_counter = 0
+                    running.remove(p)
+                    waitingQ.append(p)
+                    # print(waitingQ[0].n, context_time)
+        # check if the running process ran out of time
+        #print(time)
+        for p in waitingQ:
+            #print(p.n, p.io[p.io_i], time)
+            if (p.io[p.io_i] == 0):
+                waitingQ.remove(p)
+                p.io_i += 1
+                if (len(running) > 0 and not(time > 1158 and time < 1162)):
+                    #print(time, running[0].n, p.tauarray[p.cpu_i], running[0].tauarray[running[0].cpu_i] - run_counter)
+                    if (p.tauarray[p.cpu_i] < running[0].tauarray[running[0].cpu_i] - run_counter):
+                        if (time < 1000):
+                            if (io_corner):
+                                s_r = 'time ' + repr(time - 1) + 'ms:'
+                                print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i], "ms)",
+                                      "completed I/O; preempting", running[0].n, "[Q", printNames(readyQ))
+                                s_r = 'time ' + repr(time) + 'ms:'
+                            else:
+                                print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i], "ms)",
+                                      "completed I/O; preempting", running[0].n, "[Q", printNames(readyQ))
+                        heapq.heappush(readyQ, running.pop(0))
+                        running.append(p)                       
+                        preempted = True
+                        preemptions += 1
+                        
+                    else:
+                        heapq.heappush(readyQ, p)
+                        if (time < 1000):
+                            if (io_corner):
+                                s_r = 'time ' + repr(time - 1) + 'ms:'
+                                print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i], "ms)",
+                                      "completed I/O; added to ready queue [Q", printNames(readyQ))
+                                s_r = 'time ' + repr(time) + 'ms:'
+                            else:
+                                print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i], "ms)",
+                                      "completed I/O; added to ready queue [Q", printNames(readyQ))
+                else:
+                    heapq.heappush(readyQ, p)
+                    if (time < 1000):
+                        if (io_corner):
+                            s_r = 'time ' + repr(time - 1) + 'ms:'
+                            print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i], "ms)",
+                                  "completed I/O; added to ready queue [Q", printNames(readyQ))
+                            s_r = 'time ' + repr(time) + 'ms:'
+                        else:
+                            print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i], "ms)",
+                                  "completed I/O; added to ready queue [Q", printNames(readyQ))
+            else:
+                p.io[p.io_i] -= 1
+                # check if any processes arrive
+        io_corner = False
+        for p in plist_SRT:
+            if (p.a == time):
+                heapq.heappush(readyQ, p)
+                if (time < 1000):
+                    print(s_r, "Process", p.n, "(tau", p.tauarray[p.cpu_i], "ms)", "arrived; added to ready queue [Q",
+                          printNames(readyQ))
+        # check if nothing is running
+        #print(len(readyQ))
+        if (not preempted and len(running) == 0 and len(readyQ) != 0):
+            input = heapq.heappop(readyQ)
+            running.append(input)
+            #print("RUNNING",time, input.n)
+            context_time += int(switchtime / 2)
+            s_r = 'time ' + repr(time + context_time) + 'ms:'
+            run_counter = 0
+            if (time < 1000):
+                print(s_r, "Process", running[0].n, "(tau", running[0].tauarray[running[0].cpu_i], "ms)",
+                      "started using the CPU for " + str(running[0].cpu[running[0].cpu_i]) + "ms burst [Q",
+                      printNames(readyQ))
+        if (preempted and len(running) == 1 and len(readyQ) != 0):
+            context_time += int(switchtime)
+            s_r = 'time ' + repr(time + context_time) + 'ms:'
+            run_counter = 0
+            if (time < 1000):
+                print(s_r, "Process", running[0].n, "(tau", running[0].tauarray[running[0].cpu_i], "ms)",
+                      "started using the CPU for " + str(running[0].cpu[running[0].cpu_i]) + "ms burst [Q",
+                      printNames(readyQ))            
+        # Time increment and ender.
+        time += 1
+
+    cpuburst_total = sums
+    sums = 0
+    for p in plist_SRT:
+        sums += p.wait
+    print("-- average wait time: %.3f" % (sums/total_bursts), "ms", file = f)
+    print("-- average turnaround time: %.3f" % ((sums + cpuburst_total + (switchtime* total_bursts))/total), "ms", file = f)
+    print("-- total number of context switches:", int(context_total/switchtime) + 1, file = f)
+    print("-- total number of preemptions:", preemptions, file = f)
 
 
 if __name__ == "__main__":
@@ -377,6 +769,6 @@ if __name__ == "__main__":
 
     # SJF(plist_SJF, False, rradd, switchtime)
     roundRobin(plist_FCFS, 999999999, rradd, switchtime)
-
-
-    #roundRobin(plist_FCFS, 100, rradd, switchtime)
+    SJF(plist_SJF, switchtime)
+    SRT(plist_SRT, switchtime)
+    roundRobin(plist_RR, tslice, rradd, switchtime)
